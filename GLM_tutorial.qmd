@@ -1,0 +1,115 @@
+---
+title: "Untitled"
+format: html
+editor: visual
+---
+
+# Part 1: Building on Linear Models: When OLMs Fall Short
+
+In the previous tutorial, we explored Ordinary Linear Models (OLMs) and learned that they dominate statistics because of their mathematical guarantees, computational efficiency, and interpretability. We also saw how linear models can handle complex relationships through transformations, polynomials, and interactions.
+
+However, OLMs make several fundamental assumptions that simply don't hold for many types of biological and genomic data:
+
+1.  **Continuous response variables**: OLMs assume your outcome can take any real value
+
+2.  **Normal error distribution**: Residuals should follow a normal distribution
+
+3.  **Constant variance**: The spread of residuals should be the same across all fitted values
+
+4.  **Linear relationship**: After transformations, the relationship should be linear in parameters
+
+But what happens when your data violates these assumptions in ways that can't be fixed with transformations?
+
+## When Biology Breaks OLM Assumptions
+
+### **Count Data: The RNA-seq Problem**
+
+Imagine you're analyzing RNA-seq data, where you measure gene expression as integer values. (read counts).
+
+Count data has several properties that break OLM assumptions:
+
+-   **Discrete, not continuous**: You can't have 2.5 reads
+
+-   **Non-negative**: Negative counts are impossible
+
+-   **Variance increases with mean**: RNA-seq count data is inhereintly heteroscedastic, with higher-expressed genes having greater variance among replicates than low-expressed genes. This varianbity comes from a combination of biological variation between cells, variance in library prep, and non-perfect read count normalization.
+
+-   **Many zeros**: Especially for lowly expressed genes
+
+### Binary outcomes in GWAS analysis
+
+In genome-wide association studies (GWAS), you have binary predictors (allele identity) but want to predict **probabilities**:
+
+-   Disease status → P(disease \| genotype)
+
+-   Treatment response → P(response \| mutation_status)
+
+-   Mutation presence → P(mutation \| population_ancestry)
+
+The **observed data** is binary (0/1), but we want to **predict probabilities** (0 to 1). This violates OLM assumptions because:
+
+-   **Observed values are discrete**: Only 0 or 1, not continuous
+
+-   **Non-constant variance**: Variance of binary outcomes is p(1-p), so it's highest when probability ≈ 0.5 and lowest near 0 or 1
+
+-   **Bounded predictions**: We want probabilities between 0 and 1, but OLMs can predict any value (including negative "probabilities" or values \> 1)
+
+### Survival Data: The Clinical Trial Problem
+
+Survival analysis studies the time until an event occurs. Despite the name "survival," the "event" doesn't have to be death - it could be:
+
+-   Time until cancer recurrence
+
+-   Time until treatment failure
+
+-   Time until infection clearance
+
+**Example**: In a cancer drug trial, you follow 100 patients for 5 years to see how long the treatment keeps their cancer in remission.
+
+Survival data creates unique challenges:
+
+-   **Censoring**: The study ends before some patients experience the event. Patient A is still cancer-free after 5 years - did the treatment "cure" them, or would they relapse in year 6? We don't know.
+
+-   **Bounded at zero:** Survival times can't be negative
+
+-   **Time-varying risk**: The risk of recurrence might change over time (high initially, then decrease, then increase again)
+
+-   **Research questions** - In survival analysis, you're often interested in hazard rates (instantaneous risk of failure) rather than just predicting time-to-event, which requires specialized modeling. For example, you might want to know what is the risk that a pateints cancer returns in the next moment. This probabality will change over the course of time e.g. the hazard rate may initially be high after treatment (non-responders), then lower for a while as the treatment is effective, then higher again as the effects of the treatment wear off.
+
+This violates OLM assumptions because we have incomplete data (censoring) and we're often more interested in modeling the instantaneous risk of failure at any given time, rather than just predicting the exact time to failure.
+
+# Part 2: Enter Generalized Linear Models (GLMs)
+
+GLMs extend linear models to handle the above scenarios by relaxing key assumptions while maintaining the linear model framework we are familiar with.
+
+### The GLM Framework: Three Components
+
+Every GLM consists of three components:
+
+1.  **Outcome distribution family** : Specifies the probability distribution of the response variable
+2.  **Systematic Component**: The linear predictor (just like in OLMs): η = β₀ + β₁X₁ + β₂X₂ + ...
+3.  **Link Function**: Connects the expected value of Y to the linear predictor: g(μ) = η. In other words, it transforms the continuous output of the linear predictors to conform to the outcome distribution family.
+
+It might seem that the link function and the outcome distribution family are really two sides of the same componenent, as the link function essentially defines the outcome distribution. This is not incorrect, although there are instances beyond the scope of this tutorial where it can be valuable to think of them as seperate components. For example, you can have multiple different link functions that each transform data that conforms to the same outcome distribution.
+
+In practice however, each outcome distribution family is frequently associated with a specific link function:
+
+-   Binomial → logit link (99% of the time)
+
+-   Poisson → log link (99% of the time)
+
+-   Negative Binomial → log link (99% of the time)
+
+-   Normal → identity link (always - this just means the expected value of the outcome equals the linear predictor directly. This is what OLMs use and is the easiest to interpret)
+
+-   Gamma → log link (most common, \~80% of the time)
+
+### Key Insight: GLMs Transform the Mean, Not the Data
+
+In OLMs, we sometimes transform the response variable (e.g., log(Y)) to meet assumptions. In GLMs, we transform the **expected value** of Y using a link function, while keeping the original data intact.
+
+This is powerful because we maintain the original scale and interpretation of our data while allowing for predicted expected values that follow a specific distribution (e.g. predicting the expecgted probability of disease using data that only contains binary outcomes)
+
+# Part 3: Common GLM Types in Bioinformatics
+
+### 
