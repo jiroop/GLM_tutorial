@@ -90,7 +90,7 @@ Every GLM consists of three components:
 2.  **Systematic Component**: The linear predictor (just like in OLMs): η = β₀ + β₁X₁ + β₂X₂ + ...
 3.  **Link Function**: Connects the expected value of Y to the linear predictor: g(μ) = η. In other words, it transforms the continuous output of the linear predictors to conform to the outcome distribution family.
 
-It might seem that the link function and the outcome distribution family are really two sides of the same componenent, as the link function essentially defines the outcome distribution. This is not incorrect, although there are instances beyond the scope of this tutorial where it can be valuable to think of them as seperate components. For example, you can have multiple different link functions that each transform data that conforms to the same outcome distribution.
+It might seem that the link function and the outcome distribution family are really two sides of the same component, since the link function essentially defines the outcome distribution. This is not incorrect, however there are instances beyond the scope of this tutorial where it can be valuable to think of them as separate components. For example, you can have multiple different link functions that each transform data that conforms to the same outcome distribution.
 
 In practice however, each outcome distribution family is frequently associated with a specific link function:
 
@@ -104,12 +104,189 @@ In practice however, each outcome distribution family is frequently associated w
 
 -   Gamma → log link (most common, \~80% of the time)
 
+You may wonder, how can the same link function (e.g. the log link) be associated with different outcome distributions? The reason is that the linear predictor and the link only predict the expected mean value. However the outcome distribution determines the shape of the expected variance around that mean.
+
+When a GLM is fit, it will estimate the regression coefficients (β₀, β₁, etc.) that determine the mean, plus any additional distribution specific parameters that control the variance structure. For example:
+
+**Poission outcome:** No additional parameters needed, since mean = variance by definition.
+
+**Negative Binomial outcome:** Estimates a dispersion parameter θ (theta) that controls overdispersion. Variance = mean + (mean²/θ), allowing for much more variability than Poisson.
+
+**Gamma outcome:** Estimates a shape parameter that controls the variance-to-mean relationship. Variance = mean²/shape, so variance increases with the square of the mean.
+
+**Normal outcome:** Estimates σ² (error variance), which is constant regardless of the mean value.
+
 ### Key Insight: GLMs Transform the Mean, Not the Data
 
 In OLMs, we sometimes transform the response variable (e.g., log(Y)) to meet assumptions. In GLMs, we transform the **expected value** of Y using a link function, while keeping the original data intact.
 
 This is powerful because we maintain the original scale and interpretation of our data while allowing for predicted expected values that follow a specific distribution (e.g. predicting the expecgted probability of disease using data that only contains binary outcomes)
 
-# Part 3: Common GLM Types in Bioinformatics
+# Part 3: Tutorial with TCGA Breast Cancer data
+
+## Introduction: Our Research Goals
+
+You're a cancer genomics researcher analyzing The Cancer Genome Atlas (TCGA) breast cancer cohort. Your team wants to understand how genomic alterations drive cancer progression and treatment response. Specifically, you need to determine:
+
+1.  **CNV Associations**: Which copy number variations are associated with aggressive disease?
+
+2.  **Expression-Outcome Links**: Does the expression level of key cancer genes predict survival outcomes?
+
+3.  **Integrated Analysis**: How do CNVs affect gene expression, and how does this impact patient outcomes?
+
+4.  **Clinical Prediction**: Can we build genomic signatures for treatment stratification?
+
+5.  **High-dimensional Modeling**: With thousands of genes, how do we avoid overfitting?
+
+6.  This analysis will use **real genomic data** from over 1,000 breast cancer patients, demonstrating GLM applications in cancer genomics research.
+
+## Why GLMs Are Essential for Cancer Genomics
+
+Cancer genomics data presents unique challenges that can be addressed by GLMs as well as regularization:
+
+1.  **Copy Number Data**: Discrete integer values or categorical values (-2, -1, 0, +1, +2) representing deletions/amplifications. The same as true for SNPs.\
+
+2.  **Binary Clinical Outcomes**: Survival status, treatment response, molecular subtypes\
+
+3.  **High-dimensional Data with many variables and relativley few outcomes**: Thousands of genes but hundreds of patients. Requires regularization to prevent model overfitting.\
+
+4.  **Non-linear Relationships**: Gene dosage effects, interaction between CNVs and expression\
+
+### Load Required Libraries and Real TCGA Data
 
 ### 
+
+**Load necessary libraries**
+
+```{r}
+#| message: false
+#| warning: false
+#| output: false
+
+library(tidyverse)
+library(curatedTCGAData) # for access to TCGA
+library(tidySummarizedExperiment) # containers for genomic data: stores expression/CNV metadata
+library(MultiAssayExperiment) # integrates multiple data types (expression + CNV + clinical)
+library(broom) # for tidy output of linear models
+library(pROC) # Calculates AUC, plos ROC curves for model analysis
+library(kableExtra)
+library(survival) # statistics for survivial analysis
+library(survminer) # for making pretty survival plots
+library(glmnet)        # For regularization (Ridge, Lasso, Elastic Net)
+library(corrplot) # for making correlation matrix plots
+library(pheatmap) 
+library(ggcorrplot) # ggplot style correlation plots
+library(stringr) # for regex 
+```
+
+**Download the curated breast cancer data from TCGA**
+
+```{r}
+#| output: false
+#| message: false
+
+# Get the Multi Assay Experiment associated with the BRCA object 
+# This will download normalized RNA-seq expression data, and clinical data from the BRXA dataset  
+brca_mae <- curatedTCGAData("BRCA", assays = c("RNASeq2GeneNorm", "clinical"), 
+                            version = "2.1.1", dry.run = FALSE)
+# print experiment names
+cat("Dataset succesfully downloaded\n")
+cat("The names of the experiments are:", names(brca_mae), sep = "\n")
+```
+
+This downloads an S4 class object. S4 objects have:
+
+1.  Slots - named components that hold specific types of data
+2.  Classes - Blueprints that define which slots exist and what data types they can hold
+3.  Methods - Functions that work with specific S4 classes
+
+This specific S4 object is of a MultiAssayExperiment class – a class designed specifically for multi-omics data. The key slots in a this type of class are:
+
+The experiments slot contains different data types, e.g. RNASeq2GeneNorm, etc.: brca_mae\@ExperimentList
+
+The colData slot has patient demographic and clinical information: brca_mae\@colData
+
+The sampleMap links samples across experiments by showing which samples belong to which patient: brca_mae\@sampleMap
+
+**Extract the RNA-seq data and patient metadata from brca_mae**
+
+```{r}
+
+# 'assay' is a method that extracts the data matrix from summarizedExperiment objects  
+expression_data <- assay(brca_mae[["BRCA_RNASeq2GeneNorm-20160128"]])
+
+cat("expression_data is a", dim(expression_data)[1], "by", dim(expression_data)[2],
+    class(expression_data)[1], "\n")
+cat("Columns are patients IDs and rows are gene names\n")
+
+# In Bioconductor Objects, clinical data is accessed with colData
+clinical_data <- colData(brca_mae)
+cat("clinical_data is a", dim(clinical_data)[1], "by", dim(clinical_data)[2],
+    class(clinical_data), "\n")
+cat("Rows are patients IDs and each row contains a list with metadata")
+
+
+
+
+```
+
+**Subset the data to include only patients in both the RNA-seq and clinical metadata objects**
+
+```{r}
+expression_patients <- colnames(expression_data)
+
+# use regular expression -- stringer package -- to get the short ID that matches the metadata
+expression_patients_succinct <- str_extract(expression_patients, "TCGA-[A-Z0-9]{2}-[A-Z0-9]{4}")
+colnames(expression_data) <- expression_patients_succinct
+clinical_patients <- rownames(clinical_data)
+common_patients <- intersect(clinical_patients, expression_patients_succinct)
+cat("There are", length(common_patients), "common patients across the RNA-seq data and clinical metadata\n\n")
+
+# subset the expression data and clinical data in place
+expression_data <- expression_data[, common_patients]
+clinical_data <- clinical_data[common_patients,]
+
+cat("expression_data is now a", class(expression_data), "with", nrow(expression_data), "rows and", ncol(expression_data), "columns\n")
+cat("clinical_data is now a", class(clinical_data), "with", nrow(clinical_data), "rows and", ncol(clinical_data), "columns\n")
+```
+
+Our analysis will now focus on known key cancer genes with established roles in breast cancer.
+
+**Define key genes and extract expression data for them**
+
+```{r}
+
+cancer_genes <- c("ERBB2", "MYC", "CCND1", "PIK3CA",    # Oncogenes
+                 "TP53", "BRCA1", "PTEN", "RB1",        # Tumor suppressors  
+                 "ESR1", "PGR", "AR",                   # Hormone receptors
+                 "CDK1", "CDKN2A", "AURKA")             # Cell cycle genes
+
+expr_subset <- expression_data[cancer_genes,]
+```
+
+**Create a dataframe that holds clinical data of interest to this analysis and key gene expression levels for each patient**
+
+```{r}
+
+analysis_data <- data.frame(
+  patient_id = common_patients,
+  
+  # deomgraphic info
+  age = as.numeric(clinical_data$patient.age_at_initial_pathologic_diagnosis),
+  vital_status = ifelse(clinical_data$patient.vital_status == "dead", 1, 0), # alive or dead
+  days_to_death  = as.numeric(clinical_data$patient.days_to_death), # days from diagnosis to death
+  days_to_last_followup = as.numeric(clinical_data$patient.days_to_last_followup), # days from diagnosis to last contact
+  
+  # tumor characteristics
+  stage = clinical_data$pathologic_stage,
+  er_status = clinical_data$patient.breast_carcinoma_estrogen_receptor_status, # do the cells have estrogen receptors
+  pr_status = clinical_data$patient.breast_carcinoma_estrogen_receptor_status, # do the cells have progesterone receptors
+  
+  # gene expression data
+  erbb2_expr = expr_subset["ERBB2", ],
+  tp53_expr = expr_subset["TP53", ],
+  brca1_expr = expr_subset["BRCA1", ],
+  myc_expr = expr_subset["MYC", ],
+  esr1_expr = expr_subset["ESR1", ],
+  pgr_expr = expr_subset["PGR", ])
+```
