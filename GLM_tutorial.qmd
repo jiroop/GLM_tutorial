@@ -177,6 +177,7 @@ library(corrplot) # for making correlation matrix plots
 library(pheatmap) 
 library(ggcorrplot) # ggplot style correlation plots
 library(stringr) # for regex 
+library(psych) # for pretty summary tables
 ```
 
 **Download the curated breast cancer data from TCGA**
@@ -289,4 +290,66 @@ analysis_data <- data.frame(
   myc_expr = expr_subset["MYC", ],
   esr1_expr = expr_subset["ESR1", ],
   pgr_expr = expr_subset["PGR", ])
+
+cat("analysis_data is a", nrow(analysis_data), "by", ncol(analysis_data), class(analysis_data), "\n")
+cat("Row labels are patient IDs and columns contain metadata and gene expression levels")
 ```
+
+**Clean and categorize the metadata to make downsteam analysis easier**
+
+```{r}
+
+analysis_data <- analysis_data %>% 
+  filter(!is.na(age), age >= 18, age <= 100) %>% # filter out patient IDs missing or unrealistic ages
+  mutate(survival_time = ifelse(vital_status == 1, days_to_death, days_to_last_followup), # make a survival time variable
+         
+         # simple catetogization for tumor status
+         stage_simple = case_when(
+           grepl("stage i[^iv]|stage i$", stage, ignore.case = TRUE) ~ "Early",
+           grepl("stage ii[^i]|stage ii$", stage, ignore.case = TRUE) ~ "Early",
+           grepl("stage iii", stage, ignore.case = TRUE) ~ "Advanced",
+           grepl("stage iv", stage, ignore.case = TRUE) ~ "Advanced",
+           TRUE ~ "Unknown"),
+         
+         aggressive_disease = case_when(
+           stage_simple == 'Advanced' ~ 1, 
+           er_status == 'negative' & pr_status == "negative" ~ 1, # no recepters = not responsive to hormone therapy
+           TRUE ~ 0),
+         
+         # make variables for highly and lowly expressed genes
+         erbb2_high = ifelse(erbb2_expr > quantile(erbb2_expr, .9, na.rm = TRUE), 1, 0),
+         myc_high = ifelse(myc_expr > quantile(myc_expr, .9, na.rm = TRUE), 1, 0),
+         tp53_low = ifelse(tp53_expr < quantile(tp53_expr, .1, na.rm = TRUE), 1, 0), 
+         brca1_low = ifelse(brca1_expr < quantile(brca1_expr, .1, na.rm = TRUE), 1, 0),
+         esr1_high = ifelse(esr1_expr > quantile(esr1_expr, .9, na.rm = TRUE), 1, 0), 
+         pgr_high = ifelse(pgr_expr > quantile(pgr_expr, .9, na.rm = TRUE), 1, 0)) %>%
+           
+  filter(!is.na(survival_time), survival_time > 0, survival_time < 50000) # drop unrealistic survivial times
+  
+  
+```
+
+**For clarity, show the structure of each column in the df**
+
+```{r}
+str(analysis_data)
+```
+
+**Also show the number of entries in each column that have missing data**
+
+```{r}
+str(analysis_data %>% summarise_all(~sum(is.na(.))))
+```
+
+**And finally show summary statistics for each of the numeric columns**
+
+```{r}
+
+summary_stats <- analysis_data %>% select_if(is.numeric) %>% describe() %>% round(2) %>% select(-skew, -kurtosis, -vars, -trimmed, -mad)
+
+kbl(summary_stats, caption = "Summary statistcs of TCGA dataset") %>% kable_styling(bootstrap_options = c("striped"))
+```
+
+### Basic exploratory analysis 
+
+Visualize the gene expression distribution for available genes
