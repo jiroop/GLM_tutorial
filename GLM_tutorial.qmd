@@ -1,6 +1,12 @@
 ---
 title: "GLM and regularization tutorial using TCGA tumor gene expression data"
-format: html
+format: 
+  html:
+    toc: true
+    toc-title: "Table of Contents"
+    toc-location: right
+    toc-depth: 3
+    toc-float: true
 editor: visual
 ---
 

@@ -102,10 +102,38 @@ window.Quarto = {
 
 </head>
 
-<body class="fullcontent">
+<body>
 
 <div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
-
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of Contents</h2>
+   
+  <ul>
+  <li><a href="#part-1-building-on-linear-models-when-olms-fall-short" id="toc-part-1-building-on-linear-models-when-olms-fall-short" class="nav-link active" data-scroll-target="#part-1-building-on-linear-models-when-olms-fall-short">Part 1: Building on Linear Models: When OLMs Fall Short</a>
+  <ul class="collapse">
+  <li><a href="#when-biology-breaks-olm-assumptions" id="toc-when-biology-breaks-olm-assumptions" class="nav-link" data-scroll-target="#when-biology-breaks-olm-assumptions"><br>When Biology Breaks OLM Assumptions</a></li>
+  </ul></li>
+  <li><a href="#part-2-enter-generalized-linear-models-glms" id="toc-part-2-enter-generalized-linear-models-glms" class="nav-link" data-scroll-target="#part-2-enter-generalized-linear-models-glms"><br>Part 2: Enter Generalized Linear Models (GLMs)</a>
+  <ul class="collapse">
+  <li><a href="#the-glm-framework-three-components" id="toc-the-glm-framework-three-components" class="nav-link" data-scroll-target="#the-glm-framework-three-components">The GLM Framework: Three Components</a></li>
+  <li><a href="#key-insight-glms-transform-the-mean-not-the-data" id="toc-key-insight-glms-transform-the-mean-not-the-data" class="nav-link" data-scroll-target="#key-insight-glms-transform-the-mean-not-the-data">Key Insight: GLMs Transform the Mean, Not the Data</a></li>
+  </ul></li>
+  <li><a href="#part-3-tutorial-with-tcga-breast-cancer-data" id="toc-part-3-tutorial-with-tcga-breast-cancer-data" class="nav-link" data-scroll-target="#part-3-tutorial-with-tcga-breast-cancer-data"><br>Part 3: Tutorial with TCGA Breast Cancer data</a>
+  <ul class="collapse">
+  <li><a href="#introduction-our-research-goals" id="toc-introduction-our-research-goals" class="nav-link" data-scroll-target="#introduction-our-research-goals">Introduction: Our Research Goals</a></li>
+  <li><a href="#why-glms-will-be-essential-for-achieving-these-goals" id="toc-why-glms-will-be-essential-for-achieving-these-goals" class="nav-link" data-scroll-target="#why-glms-will-be-essential-for-achieving-these-goals">Why GLMs will be essential for achieving these goals</a></li>
+  <li><a href="#analysis-part-1-load-required-libraries-and-access-tcga-database" id="toc-analysis-part-1-load-required-libraries-and-access-tcga-database" class="nav-link" data-scroll-target="#analysis-part-1-load-required-libraries-and-access-tcga-database"><br>Analysis part 1: Load Required Libraries and access TCGA database</a></li>
+  <li><a href="#analysis-part-2-define-key-cancer-genes-and-create-a-dataset-the-combines-gene-expression-levels-and-patient-metadata" id="toc-analysis-part-2-define-key-cancer-genes-and-create-a-dataset-the-combines-gene-expression-levels-and-patient-metadata" class="nav-link" data-scroll-target="#analysis-part-2-define-key-cancer-genes-and-create-a-dataset-the-combines-gene-expression-levels-and-patient-metadata"><br>Analysis part 2: Define key cancer genes and create a dataset the combines gene expression levels and patient metadata</a></li>
+  <li><a href="#analysis-part-3-exploratory-analysis-of-our-data" id="toc-analysis-part-3-exploratory-analysis-of-our-data" class="nav-link" data-scroll-target="#analysis-part-3-exploratory-analysis-of-our-data"><br>Analysis part 3: Exploratory analysis of our data</a></li>
+  <li><a href="#analysis-part-4-does-pgr-expression-level-predict-tumor-aggression" id="toc-analysis-part-4-does-pgr-expression-level-predict-tumor-aggression" class="nav-link" data-scroll-target="#analysis-part-4-does-pgr-expression-level-predict-tumor-aggression"><br>Analysis part 4: Does pgr expression level predict tumor aggression?</a></li>
+  <li><a href="#analysis-part-5-does-a-model-that-incorporates-all-6-key-genes-predict-tumor-status-better" id="toc-analysis-part-5-does-a-model-that-incorporates-all-6-key-genes-predict-tumor-status-better" class="nav-link" data-scroll-target="#analysis-part-5-does-a-model-that-incorporates-all-6-key-genes-predict-tumor-status-better"><br> Analysis part 5: Does a model that incorporates all 6 key genes predict tumor status better?</a></li>
+  <li><a href="#analysis-part-6-does-a-model-that-incorporates-100-genes-fit-the-data-better" id="toc-analysis-part-6-does-a-model-that-incorporates-100-genes-fit-the-data-better" class="nav-link" data-scroll-target="#analysis-part-6-does-a-model-that-incorporates-100-genes-fit-the-data-better"><br>Analysis part 6: Does a model that incorporates 100+ genes fit the data better?</a></li>
+  <li><a href="#analysis-part-7-can-regularization-methods-improve-model-performance" id="toc-analysis-part-7-can-regularization-methods-improve-model-performance" class="nav-link" data-scroll-target="#analysis-part-7-can-regularization-methods-improve-model-performance"><br>Analysis part 7: Can regularization methods improve model performance?</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
 <main class="content" id="quarto-document-content">
 
 <header id="title-block-header" class="quarto-title-block default">
@@ -1587,12 +1615,12 @@ window.Quarto = {
 <span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"and the SD is"</span>, <span class="fu">round</span>(<span class="fu">sd</span>(model_158_gene_cv<span class="sc">$</span>resample<span class="sc">$</span>ROC),<span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>The AUC values for the 5 resamples are:
- 0.748
-0.714
-0.693
-0.686
-0.732 
-The mean is 0.715 and the SD is 0.026</code></pre>
+ 0.677
+0.756
+0.664
+0.737
+0.747 
+The mean is 0.716 and the SD is 0.043</code></pre>
 </div>
 </div>
 <p>Compared to our AUC for the training performance of 158 gene model (AUC=.881), these AUC values from cross-validation are substantially worse. This is a strong indication that our 158 gene model is overfit to the training data. As mentioned above, this is likely due to a combination of multicollinearity and too few patients for the 159 predictors. To explicitly assess collinearity, we’ll use the vif package.</p>
