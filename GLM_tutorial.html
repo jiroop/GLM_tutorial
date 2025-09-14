@@ -996,13 +996,9 @@ window.Quarto = {
 <section id="analysis-part-4-does-pgr-expression-level-predict-tumor-aggression" class="level3">
 <h3 class="anchored" data-anchor-id="analysis-part-4-does-pgr-expression-level-predict-tumor-aggression"><br>Analysis part 4: Does pgr expression level predict tumor aggression?</h3>
 <p>Let’s start with a very basic question. How well can we predict whether a tumor is aggressive or not given solely the expression level of pgr? To ask this, we’ll build a GLM using a binomial outcome distribution (appropriate for binary outcomes) and the logit link (the standard for binary outcomes). We’ll include pgr expression level and age as predictor variables. Our model will look like this:</p>
-<p><span class="math display">\[\ln\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1(\text{pgr_expr}_i) + \beta_2(\text{age}_i)\]</span></p>
+<p><span class="math display">\[\ln\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1(\text{pgr\_expr}_i) + \beta_2(\text{age}_i)\]</span></p>
 <p>Where:</p>
-<ul>
-<li><span class="math inline">\(\ln\left(\frac{\pi_i}{1-\pi_i}\right)\)</span>= log odds (or logit) link function that converts a probability into a continuous variable</li>
-<li><span class="math inline">\(\pi_i\)</span> = probability of an aggressive tumor</li>
-<li><span class="math inline">\(i\)</span> = an individual patient</li>
-</ul>
+<p><span class="math inline">\(\ln\left(\frac{\pi_i}{1-\pi_i}\right)\)</span>= log odds (or logit) link function that converts a probability into a continuous variable <span class="math inline">\(\pi_i\)</span> = probability of an aggressive tumor <span class="math inline">\(i\)</span> = an individual patient</p>
 <p>You can see from the equation that the linear predictor will produce a continues variable that is then used to fit a probability value to <span class="math inline">\(\pi_i\)</span> .</p>
 <p>Note that the linear predictor is often denoted as <span class="math inline">\(\eta_i\)</span> and the logit link as: <span class="math display">\[\text{logit}(\pi_i)\]</span></p>
 <p>As was true for OLM modeling, the probability prediction is just a mean prediction: it does not tell us anything about the expected variance around this mean. In the case of OLMs, the variance is assumed to be normally distributed and constant across all model predictions. This is not true with a logit link GLM. In this case, the variance depends on the value of the predicted probability. Let’s explain:</p>
@@ -1615,12 +1611,12 @@ window.Quarto = {
 <span id="cb47-4"><a href="#cb47-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"and the SD is"</span>, <span class="fu">round</span>(<span class="fu">sd</span>(model_158_gene_cv<span class="sc">$</span>resample<span class="sc">$</span>ROC),<span class="dv">3</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>The AUC values for the 5 resamples are:
- 0.677
-0.756
-0.664
-0.737
-0.747 
-The mean is 0.716 and the SD is 0.043</code></pre>
+ 0.713
+0.706
+0.782
+0.65
+0.734 
+The mean is 0.717 and the SD is 0.048</code></pre>
 </div>
 </div>
 <p>Compared to our AUC for the training performance of 158 gene model (AUC=.881), these AUC values from cross-validation are substantially worse. This is a strong indication that our 158 gene model is overfit to the training data. As mentioned above, this is likely due to a combination of multicollinearity and too few patients for the 159 predictors. To explicitly assess collinearity, we’ll use the vif package.</p>

@@ -585,13 +585,11 @@ This suggests to us that pgr may be an important gene in a model that predicts w
 
 Let's start with a very basic question. How well can we predict whether a tumor is aggressive or not given solely the expression level of pgr? To ask this, we'll build a GLM using a binomial outcome distribution (appropriate for binary outcomes) and the logit link (the standard for binary outcomes). We'll include pgr expression level and age as predictor variables. Our model will look like this:
 
-$$\ln\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1(\text{pgr_expr}_i) + \beta_2(\text{age}_i)$$
+$$\ln\left(\frac{\pi_i}{1-\pi_i}\right) = \beta_0 + \beta_1(\text{pgr\_expr}_i) + \beta_2(\text{age}_i)$$
 
 Where:
 
--   $\ln\left(\frac{\pi_i}{1-\pi_i}\right)$= log odds (or logit) link function that converts a probability into a continuous variable
--   $\pi_i$ = probability of an aggressive tumor
--   $i$ = an individual patient
+$\ln\left(\frac{\pi_i}{1-\pi_i}\right)$= log odds (or logit) link function that converts a probability into a continuous variable $\pi_i$ = probability of an aggressive tumor $i$ = an individual patient
 
 You can see from the equation that the linear predictor will produce a continues variable that is then used to fit a probability value to $\pi_i$ .
 
@@ -1441,6 +1439,6 @@ ggplot(plot_df, aes(x=1-specificity, y=tpr, color=model)) +
 
 The ROC plots shows all three regularized models performing better than single gene and 158-gene models, as expected. Given these data and that from the scatterplot above, I would likely choose either the Elastic Net or the LASSO model for prediction, as these will give more consistent performance on test data sets.
 
-#### Conclusion 
+#### Conclusion
 
 This analysis demonstrates the power and necessity of regularization in high-dimensional genomics data. The unregularized 158-gene model, despite achieving impressive training performance (AUC \~0.90), suffered from severe overfitting that rendered it unreliable for new predictions. Regularization methods successfully solved this problem, with LASSO and Elastic Net emerging as the optimal approaches due to their combination of strong predictive performance (\~0.78 AUC) and excellent generalization stability. While Ridge regression achieved similar average performance, its higher variability across test folds makes it less suitable for clinical deployment where consistent predictions are crucial. The comparison also revealed that simple models like the single-gene approach, while interpretable, sacrifice substantial predictive power and can exhibit unexpected instability.
